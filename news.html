@@ -34,7 +34,8 @@
             margin-bottom: 20px;
         }
         .title { font-size: 24px; font-weight: 600; }
-        .refresh-btn {
+        .header-buttons { display: flex; gap: 10px; }
+        .btn {
             background: var(--accent);
             color: white;
             border: none;
@@ -42,9 +43,11 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
+            font-family: inherit;
         }
-        .refresh-btn:hover { opacity: 0.9; }
-        .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-home { background: #4a5568; }
         
         .news-list {
             height: calc(100vh - 80px);
@@ -61,6 +64,12 @@
             padding: 18px;
             margin-bottom: 12px;
             border-left: 4px solid var(--accent);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .news-item:hover {
+            transform: translateX(4px);
+            background: #234375;
         }
         .news-title {
             font-size: 16px;
@@ -98,20 +107,101 @@
             font-size: 12px;
             margin-top: 10px;
         }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: var(--bg-card);
+            padding: 32px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+        .modal-body {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .modal-source {
+            display: inline-block;
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        .modal-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: opacity 0.3s;
+        }
+        .modal-link:hover { opacity: 0.9; }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="title">📰 科技新闻</div>
-        <button class="refresh-btn" onclick="fetchNews()" id="refreshBtn">🔄 刷新</button>
+        <div class="header-buttons">
+            <button class="btn btn-home" onclick="window.location.href='/'">🏠 看板</button>
+            <button class="btn" onclick="fetchNews()" id="refreshBtn">🔄 刷新</button>
+        </div>
     </div>
     <div class="news-list" id="newsList">
         <div class="loading">加载中...</div>
     </div>
     <div class="last-updated" id="lastUpdated"></div>
 
+    <!-- 详情 Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle"></div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-source" id="modalSource"></div>
+            <br><br>
+            <a class="modal-link" id="modalLink" href="" target="_blank">🔗 阅读原文</a>
+            <button class="btn btn-home" style="margin-left: 10px;" onclick="closeModal()">关闭</button>
+        </div>
+    </div>
+
     <script>
         const NEWS_KEY = 'tech_news_cache';
+        let articlesData = [];
         
         async function fetchNews() {
             const btn = document.getElementById('refreshBtn');
@@ -123,7 +213,8 @@
                 const cached = localStorage.getItem(NEWS_KEY);
                 if (cached) {
                     const data = JSON.parse(cached);
-                    renderNews(data.articles || []);
+                    articlesData = data.articles || [];
+                    renderNews(articlesData);
                 }
                 
                 // 然后获取新数据
@@ -138,17 +229,21 @@
                     if (index < 15) {
                         let title = item.querySelector('title')?.textContent || '';
                         let desc = item.querySelector('description')?.textContent || '';
+                        let link = item.querySelector('link')?.textContent || '';
+                        
                         // 清理 HTML 标签
                         desc = desc.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-                        desc = desc.substring(0, 200) + (desc.length > 200 ? '...' : '');
                         
                         articles.push({
                             title: title.replace(/<!\[CDATA\[|\]\]>/g, ''),
                             desc: desc,
+                            link: link,
                             source: 'BBC Tech'
                         });
                     }
                 });
+                
+                articlesData = articles;
                 
                 // 保存到缓存
                 localStorage.setItem(NEWS_KEY, JSON.stringify({
@@ -165,7 +260,8 @@
                 const cached = localStorage.getItem(NEWS_KEY);
                 if (cached) {
                     const data = JSON.parse(cached);
-                    renderNews(data.articles || []);
+                    articlesData = data.articles || [];
+                    renderNews(articlesData);
                     document.getElementById('lastUpdated').textContent = '（显示缓存数据）';
                 } else {
                     document.getElementById('newsList').innerHTML = '<div class="error">加载失败，请点击刷新重试</div>';
@@ -183,14 +279,32 @@
                 return;
             }
             
-            list.innerHTML = articles.map(article => `
-                <div class="news-item">
+            list.innerHTML = articles.map((article, index) => `
+                <div class="news-item" onclick="showDetail(${index})">
                     <div class="news-title">${article.title}</div>
-                    <div class="news-desc">${article.desc}</div>
+                    <div class="news-desc">${article.desc.substring(0, 150)}${article.desc.length > 150 ? '...' : ''}</div>
                     <span class="news-source">${article.source}</span>
                 </div>
             `).join('');
         }
+        
+        function showDetail(index) {
+            const article = articlesData[index];
+            document.getElementById('modalTitle').textContent = article.title;
+            document.getElementById('modalBody').textContent = article.desc;
+            document.getElementById('modalSource').textContent = article.source;
+            document.getElementById('modalLink').href = article.link;
+            document.getElementById('modal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+        
+        // 点击背景关闭
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
         
         // 页面加载时获取新闻
         fetchNews();

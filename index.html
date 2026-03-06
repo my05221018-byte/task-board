@@ -217,9 +217,35 @@
             border-color: var(--accent);
             background: rgba(233, 69, 96, 0.1);
         }
+        
+        .nav-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .nav-btn {
+            background: var(--bg-column);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .nav-btn:hover {
+            background: var(--bg-task);
+            color: var(--text-primary);
+        }
     </style>
 </head>
 <body>
+    <div class="nav-bar">
+        <a href="/news.html" class="nav-btn">📰 新闻</a>
+    </div>
     <div class="board">
         <div class="column todo" data-status="todo">
             <div class="column-header">
